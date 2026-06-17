@@ -136,16 +136,17 @@ export const createInvoice = async (req, res) => {
         await customer.save({ session });
 
         await Transaction.create(
-          [
-            {
-              customer: customerId,
-              invoice: invoice[0]._id,
-              amount: grand_total,
-              type: "debit",
-            },
-          ],
-          { session }
-        );
+  [
+    {
+      customer: customerId,
+      invoice: invoice[0]._id,
+      amount: subtotal,
+      type: "debit",
+      note: "Invoice Sale",
+    },
+  ],
+  { session }
+);
       }
     }
 
@@ -204,16 +205,17 @@ export const returnInvoice = async (req, res) => {
       );
 
       await Transaction.create(
-        [
-          {
-            customer: invoice.customer,
-            invoice: invoice._id,
-            amount: invoice.grand_total,
-            type: "credit",
-          },
-        ],
-        { session }
-      );
+  [
+    {
+      customer: invoice.customer,
+      invoice: invoice._id,
+      amount: invoice.subtotal,
+      type: "credit",
+      note: "Invoice Returned",
+    },
+  ],
+  { session }
+);
     }
 
     invoice.isReturned = true;

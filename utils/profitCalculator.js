@@ -1,3 +1,3 @@
-export const calculateProfit = (sale, purchase) => {
-  return sale - purchase;
-};
+  export const calculateProfit = (sale, purchase) => {
+    return sale - purchase;
+  };

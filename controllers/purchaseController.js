@@ -5,33 +5,46 @@ export const addPurchase = async (req, res) => {
     const { products } = req.body;
 
     if (!products || !Array.isArray(products) || products.length === 0) {
-      return res.status(400).json({ message: "Products array is required" });
+      return res.status(400).json({ message: "Products array zaroori hai" });
     }
+
+    const results = [];
 
     for (let item of products) {
       const product = await Product.findById(item.productId);
 
-      // FIX: was missing null check — crashes with "cannot read property of null"
       if (!product) {
-        return res
-          .status(404)
-          .json({ message: `Product not found: ${item.productId}` });
+        return res.status(404).json({ message: `Product nahi mila: ${item.productId}` });
       }
 
       if (!item.quantity || item.quantity <= 0) {
-        return res.status(400).json({ message: "Quantity must be greater than 0" });
+        return res.status(400).json({ message: "Quantity 0 se zyada honi chahiye" });
       }
 
+      // Stock add karo
       product.quantity += Number(item.quantity);
 
-      if (item.purchase_price && item.purchase_price > 0) {
-        product.purchase_price = item.purchase_price;
+      // Prices update karo agar diye hain
+      if (item.mrp && Number(item.mrp) > 0) {
+        product.mrp = Number(item.mrp);
+      }
+      if (item.trade_price && Number(item.trade_price) > 0) {
+        product.trade_price = Number(item.trade_price);
+      }
+      if (item.purchase_price && Number(item.purchase_price) > 0) {
+        product.purchase_price = Number(item.purchase_price);
       }
 
       await product.save();
+
+      results.push({
+        name: product.name,
+        addedQty: Number(item.quantity),
+        newStock: product.quantity,
+      });
     }
 
-    res.json({ message: "Stock updated successfully" });
+    res.json({ message: "Stock update ho gaya", updated: results });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,9 +1,8 @@
 import Product from "../models/Product.js";
 
-// ADD PRODUCT
+// ADD PRODUCT — sirf naam zaroori hai
 export const addProduct = async (req, res) => {
   try {
-    // FIX: validate required fields instead of blindly saving req.body
     const {
       name,
       product_type,
@@ -18,33 +17,28 @@ export const addProduct = async (req, res) => {
       prefix,
       unit_structure,
       expiry_date,
+      discount,
     } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "Product name is required" });
-    }
-
-    if (
-      (product_type === "company" || !product_type) &&
-      (mrp === undefined || mrp === null)
-    ) {
-      return res.status(400).json({ message: "MRP is required for company products" });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Product ka naam zaroori hai" });
     }
 
     const product = await Product.create({
-      name,
+      name: name.trim(),
       product_type: product_type || "company",
-      mrp,
-      purchase_price,
-      trade_price,
-      company_name,
-      generic_name,
-      fixed_price,
+      mrp: mrp || 0,
+      purchase_price: purchase_price || 0,
+      trade_price: trade_price || 0,
+      company_name: company_name || null,
+      generic_name: generic_name || null,
+      fixed_price: fixed_price || null,
       quantity: quantity || 0,
-      barcode,
-      prefix,
-      unit_structure,
-      expiry_date,
+      barcode: barcode || null,
+      prefix: prefix || null,
+      unit_structure: unit_structure || { box: { strips: 1 }, strip: { tablets: 10 } },
+      expiry_date: expiry_date || null,
+      discount: discount || 0,
     });
 
     res.json(product);
@@ -68,6 +62,7 @@ export const getProducts = async (req, res) => {
         { name: { $regex: search, $options: "i" } },
         { company_name: { $regex: search, $options: "i" } },
         { barcode: { $regex: search, $options: "i" } },
+        { generic_name: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -96,7 +91,6 @@ export const getProducts = async (req, res) => {
 // UPDATE PRODUCT
 export const updateProduct = async (req, res) => {
   try {
-    // FIX: was missing try/catch — crashes server on bad ID
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -104,7 +98,7 @@ export const updateProduct = async (req, res) => {
     );
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product nahi mila" });
     }
 
     res.json(product);
@@ -116,14 +110,13 @@ export const updateProduct = async (req, res) => {
 // DELETE PRODUCT
 export const deleteProduct = async (req, res) => {
   try {
-    // FIX: was missing try/catch — crashes server on bad ID
     const product = await Product.findByIdAndDelete(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product nahi mila" });
     }
 
-    res.json({ message: "Product deleted successfully" });
+    res.json({ message: "Product delete ho gaya" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -133,14 +126,13 @@ export const deleteProduct = async (req, res) => {
 export const searchProducts = async (req, res) => {
   try {
     const q = req.query.q;
-
-    // FIX: guard against empty query — $regex with undefined crashes Mongo
     if (!q) return res.json([]);
 
     const products = await Product.find({
       $or: [
         { name: { $regex: q, $options: "i" } },
         { company_name: { $regex: q, $options: "i" } },
+        { generic_name: { $regex: q, $options: "i" } },
       ],
     }).limit(20);
 
@@ -154,8 +146,6 @@ export const searchProducts = async (req, res) => {
 export const searchProductsAdvanced = async (req, res) => {
   try {
     const q = req.query.q;
-
-    // FIX: guard against empty query
     if (!q) return res.json([]);
 
     const products = await Product.find({
@@ -163,6 +153,7 @@ export const searchProductsAdvanced = async (req, res) => {
         { name: { $regex: q, $options: "i" } },
         { company_name: { $regex: q, $options: "i" } },
         { barcode: { $regex: q, $options: "i" } },
+        { generic_name: { $regex: q, $options: "i" } },
       ],
     }).limit(20);
 
