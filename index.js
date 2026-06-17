@@ -12,7 +12,6 @@ import { analyticsRoutes, demandRoutes, purchaseRoutes, importRoutes, migrationR
 
 
 dotenv.config();
-console.log(dotenv)
 
 const app = express();
 
