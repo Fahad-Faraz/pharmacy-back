@@ -1,56 +1,35 @@
-// routes/analyticsRoutes.js
 import express from "express";
-import { getAnalytics } from "../controllers/analyticsController.js";
-import { protect } from "../middleware/authMiddleware.js";
-const r1 = express.Router();
-r1.get("/", protect, getAnalytics);
-export { r1 as analyticsRoutes };
-
-// routes/demandRoutes.js
-import { getDemandList } from "../controllers/demandController.js";
-const r2 = express.Router();
-r2.get("/", protect, getDemandList);
-export { r2 as demandRoutes };
-
-// routes/purchaseRoutes.js
-import { addPurchase } from "../controllers/purchaseController.js";
-import { adminOnly } from "../middleware/authMiddleware.js";
-const r3 = express.Router();
-r3.post("/", protect, adminOnly, addPurchase);
-export { r3 as purchaseRoutes };
-
-// routes/importRoutes.js
-import express from "express";
-import upload from "../middleware/uploadMiddleware.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
+
+import { getAnalytics } from "../controllers/analyticsController.js";
+import { getDemandList } from "../controllers/demandController.js";
+import { addPurchase } from "../controllers/purchaseController.js";
 import {
   importProducts,
   importCustomers,
 } from "../controllers/importController.js";
+import {
+  migrateCustomers,
+  migrateProducts,
+} from "../controllers/migrationController.js";
 
-const r4 = express.Router();
+const router = express.Router();
 
-r4.post(
-  "/products",
-  protect,
-  adminOnly,
-  upload.single("file"),
-  importProducts
-);
+// analytics
+router.get("/analytics", protect, getAnalytics);
 
-r4.post(
-  "/customers",
-  protect,
-  adminOnly,
-  upload.single("file"),
-  importCustomers
-);
+// demand
+router.get("/demand", protect, getDemandList);
 
-export { r4 as importRoutes };
+// purchase
+router.post("/purchase", protect, adminOnly, addPurchase);
 
-// routes/migrationRoutes.js
-import { migrateCustomers, migrateProducts } from "../controllers/migrationController.js";
-const r5 = express.Router();
-r5.post("/customers", protect, adminOnly, migrateCustomers);
-r5.post("/products", protect, adminOnly, migrateProducts);
-export { r5 as migrationRoutes };
+// import
+router.post("/import/products", protect, adminOnly, importProducts);
+router.post("/import/customers", protect, adminOnly, importCustomers);
+
+// migration
+router.post("/migration/customers", protect, adminOnly, migrateCustomers);
+router.post("/migration/products", protect, adminOnly, migrateProducts);
+
+export default router;
