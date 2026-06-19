@@ -13,7 +13,7 @@ import { analyticsRoutes, demandRoutes, purchaseRoutes, importRoutes, migrationR
 
 
 const app = express();
-const upload = multer({ dest: "uploads/" });
+
 
 // middleware
 app.use(cors());

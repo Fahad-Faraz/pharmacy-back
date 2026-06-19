@@ -3,6 +3,7 @@ import Invoice from "../models/Invoice.js";
 import Product from "../models/Product.js";
 import Customer from "../models/Customer.js";
 import Transaction from "../models/Transaction.js";
+import PDFDocument from "pdfkit";
 
 export const createInvoice = async (req, res) => {
   const session = await mongoose.startSession();
@@ -229,5 +230,121 @@ export const returnInvoice = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     res.status(500).json({ message: err.message });
+  }
+};
+export const generateInvoicePDF = async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id)
+      .populate("customer")
+      .lean();
+
+    if (!invoice) {
+      return res.status(404).json({
+        message: "Invoice not found",
+      });
+    }
+
+    const doc = new PDFDocument({
+      margin: 40,
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/pdf"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename=invoice-${invoice._id}.pdf`
+    );
+
+    doc.pipe(res);
+
+    // HEADER
+    doc.fontSize(22).text("PHARMACY INVOICE", {
+      align: "center",
+    });
+
+    doc.moveDown();
+
+    doc.fontSize(12);
+    doc.text(`Invoice ID: ${invoice._id}`);
+    doc.text(
+      `Date: ${new Date().toLocaleDateString()}`
+    );
+
+    if (invoice.customer) {
+      doc.text(
+        `Customer: ${
+          invoice.customer.customer_name ||
+          "N/A"
+        }`
+      );
+    }
+
+    doc.moveDown();
+
+    doc.text(
+      "--------------------------------------------------------"
+    );
+
+    doc.text(
+      "Product                     Qty        Price        Total"
+    );
+
+    doc.text(
+      "--------------------------------------------------------"
+    );
+
+    invoice.products.forEach((item) => {
+      doc.text(
+        `${item.name || "Product"}     ${item.quantity}     ${item.price}     ${item.total}`
+      );
+    });
+
+    doc.moveDown();
+
+    doc.text(
+      "--------------------------------------------------------"
+    );
+
+    doc.fontSize(13);
+
+    doc.text(
+      `Subtotal: Rs ${invoice.subtotal}`
+    );
+
+    doc.text(
+      `Previous Balance: Rs ${invoice.previous_balance}`
+    );
+
+    doc.text(
+      `Grand Total: Rs ${invoice.grand_total}`
+    );
+
+    doc.text(
+      `Paid Amount: Rs ${invoice.paid_amount}`
+    );
+
+    doc.text(
+      `Remaining Balance: Rs ${invoice.remaining_balance}`
+    );
+
+    doc.moveDown();
+
+    doc.fontSize(14);
+
+    doc.text(
+      "Thank you for your purchase",
+      {
+        align: "center",
+      }
+    );
+
+    doc.end();
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };

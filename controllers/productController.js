@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import pdfParse from "pdf-parse";
 
 // ADD PRODUCT — sirf naam zaroori hai
 export const addProduct = async (req, res) => {
@@ -160,5 +161,30 @@ export const searchProductsAdvanced = async (req, res) => {
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const importProductsPDF = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: "PDF file required",
+      });
+    }
+
+    const pdfData = await pdfParse(req.file.buffer);
+
+    const text = pdfData.text;
+
+    console.log(text);
+
+    res.json({
+      success: true,
+      extractedText: text,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };

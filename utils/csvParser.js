@@ -1,10 +1,13 @@
-import fs from "fs";
 import csv from "csv-parser";
+import { Readable } from "stream";
 
-export const parseCSV = (filePath) => {
+export const parseCSV = (buffer) => {
   return new Promise((resolve, reject) => {
     const results = [];
-    fs.createReadStream(filePath)
+
+    const stream = Readable.from(buffer);
+
+    stream
       .pipe(csv())
       .on("data", (data) => results.push(data))
       .on("end", () => resolve(results))

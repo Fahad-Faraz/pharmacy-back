@@ -5,13 +5,31 @@ import {
   updateProduct,
   deleteProduct,
   searchProductsAdvanced,
+  importProductsPDF,
 } from "../controllers/productController.js";
+import { importProducts } from "../controllers/importController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-// FIX: /search must come BEFORE /:id — otherwise Express matches "search" as an id param
 router.get("/search", searchProductsAdvanced);
+
+router.post(
+  "/import-pdf",
+  protect,
+  adminOnly,
+  upload.single("file"),
+  importProductsPDF
+);
+router.post(
+  "/products",
+  protect,
+  adminOnly,
+  upload.single("file"),
+  importProducts
+);
+
 router.post("/", protect, adminOnly, addProduct);
 router.get("/", protect, getProducts);
 router.put("/:id", protect, adminOnly, updateProduct);

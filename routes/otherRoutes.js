@@ -20,10 +20,32 @@ r3.post("/", protect, adminOnly, addPurchase);
 export { r3 as purchaseRoutes };
 
 // routes/importRoutes.js
-import { importProducts, importCustomers } from "../controllers/importController.js";
+import express from "express";
+import upload from "../middleware/uploadMiddleware.js";
+import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import {
+  importProducts,
+  importCustomers,
+} from "../controllers/importController.js";
+
 const r4 = express.Router();
-r4.post("/products", protect, adminOnly, importProducts);
-r4.post("/customers", protect, adminOnly, importCustomers);
+
+r4.post(
+  "/products",
+  protect,
+  adminOnly,
+  upload.single("file"),
+  importProducts
+);
+
+r4.post(
+  "/customers",
+  protect,
+  adminOnly,
+  upload.single("file"),
+  importCustomers
+);
+
 export { r4 as importRoutes };
 
 // routes/migrationRoutes.js
