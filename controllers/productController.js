@@ -1,5 +1,5 @@
 import Product from "../models/Product.js";
-import pdfParse from "pdf-parse";
+import * as pdfParse from "pdf-parse";
 
 // ADD PRODUCT — sirf naam zaroori hai
 export const addProduct = async (req, res) => {
