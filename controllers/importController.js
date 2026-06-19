@@ -96,3 +96,20 @@ export const importProducts = async (req, res) => {
     });
   }
 };
+export const importCustomers = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: "CSV file required",
+      });
+    }
+
+    res.json({
+      message: "Customer import endpoint ready",
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
