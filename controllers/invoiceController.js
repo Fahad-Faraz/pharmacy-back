@@ -12,7 +12,6 @@ export const createInvoice = async (req, res) => {
   try {
     const { customerId, products, paid_amount, invoice_type } = req.body;
 
-    // FIX: validate required fields upfront
     if (!products || !Array.isArray(products) || products.length === 0) {
       await session.abortTransaction();
       session.endSession();
@@ -25,7 +24,6 @@ export const createInvoice = async (req, res) => {
       return res.status(400).json({ message: "Invoice type is required" });
     }
 
-    // FIX: wholesaler invoice needs a customer
     if (invoice_type === "wholesaler" && !customerId) {
       await session.abortTransaction();
       session.endSession();
@@ -69,14 +67,12 @@ export const createInvoice = async (req, res) => {
         price = product.fixed_price;
       }
 
-      // STOCK CHECK
       if (product.product_type !== "general") {
         if (product.quantity - finalQty < 0) {
           throw new Error(`Insufficient stock for: ${product.name}`);
         }
       }
 
-      // STOCK UPDATE
       if (product.product_type !== "general") {
         product.quantity -= finalQty;
         await product.save({ session });
@@ -84,21 +80,18 @@ export const createInvoice = async (req, res) => {
 
       item.name = product.name;
       item.price = price;
+      // FIX: store base_quantity so return restores correctly
+      item.base_quantity = finalQty;
       item.total = finalQty * price - (item.discount || 0);
 
       subtotal += item.total;
     }
 
-    // CUSTOMER BALANCE
     let previous_balance = 0;
 
     if (invoice_type === "wholesaler") {
       const customer = await Customer.findById(customerId).session(session);
-
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
-
+      if (!customer) throw new Error("Customer not found");
       previous_balance = customer.pending_balance || 0;
     }
 
@@ -127,7 +120,6 @@ export const createInvoice = async (req, res) => {
       { session }
     );
 
-    // CUSTOMER UPDATE for wholesaler
     if (invoice_type === "wholesaler") {
       const customer = await Customer.findById(customerId).session(session);
 
@@ -137,17 +129,17 @@ export const createInvoice = async (req, res) => {
         await customer.save({ session });
 
         await Transaction.create(
-  [
-    {
-      customer: customerId,
-      invoice: invoice[0]._id,
-      amount: subtotal,
-      type: "debit",
-      note: "Invoice Sale",
-    },
-  ],
-  { session }
-);
+          [
+            {
+              customer: customerId,
+              invoice: invoice[0]._id,
+              amount: subtotal,
+              type: "debit",
+              note: "Invoice Sale",
+            },
+          ],
+          { session }
+        );
       }
     }
 
@@ -176,29 +168,27 @@ export const returnInvoice = async (req, res) => {
     }
 
     const invoice = await Invoice.findById(invoiceId).session(session);
-
     if (!invoice) throw new Error("Invoice not found");
 
-    // FIX: simplified — if already returned, deny everyone
-    if (invoice.isReturned) {
-      throw new Error("Invoice already returned");
-    }
+    if (invoice.isReturned) throw new Error("Invoice already returned");
 
-    // restore stock
+    // FIX: use base_quantity (tablets) not display quantity (boxes/strips)
     for (let item of invoice.products) {
+      const restoreQty = item.base_quantity || item.quantity;
       await Product.updateOne(
         { _id: item.product },
-        { $inc: { quantity: item.quantity } },
+        { $inc: { quantity: restoreQty } },
         { session }
       );
     }
 
     if (invoice.invoice_type === "wholesaler") {
+      // FIX: only restore remaining_balance (what customer still owed), not grand_total
       await Customer.updateOne(
         { _id: invoice.customer },
         {
           $inc: {
-            pending_balance: -invoice.grand_total,
+            pending_balance: -invoice.remaining_balance,
             total_purchase: -invoice.grand_total,
           },
         },
@@ -206,17 +196,17 @@ export const returnInvoice = async (req, res) => {
       );
 
       await Transaction.create(
-  [
-    {
-      customer: invoice.customer,
-      invoice: invoice._id,
-      amount: invoice.subtotal,
-      type: "credit",
-      note: "Invoice Returned",
-    },
-  ],
-  { session }
-);
+        [
+          {
+            customer: invoice.customer,
+            invoice: invoice._id,
+            amount: invoice.subtotal,
+            type: "credit",
+            note: "Invoice Returned",
+          },
+        ],
+        { session }
+      );
     }
 
     invoice.isReturned = true;
@@ -232,6 +222,7 @@ export const returnInvoice = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 export const generateInvoicePDF = async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id)
@@ -239,62 +230,37 @@ export const generateInvoicePDF = async (req, res) => {
       .lean();
 
     if (!invoice) {
-      return res.status(404).json({
-        message: "Invoice not found",
-      });
+      return res.status(404).json({ message: "Invoice not found" });
     }
 
-    const doc = new PDFDocument({
-      margin: 40,
-    });
+    const doc = new PDFDocument({ margin: 40 });
 
-    res.setHeader(
-      "Content-Type",
-      "application/pdf"
-    );
-
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename=invoice-${invoice._id}.pdf`
-    );
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename=invoice-${invoice._id}.pdf`);
 
     doc.pipe(res);
 
-    // HEADER
-    doc.fontSize(22).text("PHARMACY INVOICE", {
-      align: "center",
-    });
-
+    doc.fontSize(22).text("PHARMACY INVOICE", { align: "center" });
     doc.moveDown();
-
     doc.fontSize(12);
     doc.text(`Invoice ID: ${invoice._id}`);
-    doc.text(
-      `Date: ${new Date().toLocaleDateString()}`
-    );
+
+    // FIX: use invoice's stored date, not today
+    const invoiceDate = new Date(
+      invoice.date.year,
+      invoice.date.month - 1,
+      invoice.date.day
+    ).toLocaleDateString();
+    doc.text(`Date: ${invoiceDate}`);
 
     if (invoice.customer) {
-      doc.text(
-        `Customer: ${
-          invoice.customer.customer_name ||
-          "N/A"
-        }`
-      );
+      doc.text(`Customer: ${invoice.customer.customer_name || "N/A"}`);
     }
 
     doc.moveDown();
-
-    doc.text(
-      "--------------------------------------------------------"
-    );
-
-    doc.text(
-      "Product                     Qty        Price        Total"
-    );
-
-    doc.text(
-      "--------------------------------------------------------"
-    );
+    doc.text("--------------------------------------------------------");
+    doc.text("Product                     Qty        Price        Total");
+    doc.text("--------------------------------------------------------");
 
     invoice.products.forEach((item) => {
       doc.text(
@@ -303,48 +269,18 @@ export const generateInvoicePDF = async (req, res) => {
     });
 
     doc.moveDown();
-
-    doc.text(
-      "--------------------------------------------------------"
-    );
-
+    doc.text("--------------------------------------------------------");
     doc.fontSize(13);
-
-    doc.text(
-      `Subtotal: Rs ${invoice.subtotal}`
-    );
-
-    doc.text(
-      `Previous Balance: Rs ${invoice.previous_balance}`
-    );
-
-    doc.text(
-      `Grand Total: Rs ${invoice.grand_total}`
-    );
-
-    doc.text(
-      `Paid Amount: Rs ${invoice.paid_amount}`
-    );
-
-    doc.text(
-      `Remaining Balance: Rs ${invoice.remaining_balance}`
-    );
-
+    doc.text(`Subtotal: Rs ${invoice.subtotal}`);
+    doc.text(`Previous Balance: Rs ${invoice.previous_balance}`);
+    doc.text(`Grand Total: Rs ${invoice.grand_total}`);
+    doc.text(`Paid Amount: Rs ${invoice.paid_amount}`);
+    doc.text(`Remaining Balance: Rs ${invoice.remaining_balance}`);
     doc.moveDown();
-
-    doc.fontSize(14);
-
-    doc.text(
-      "Thank you for your purchase",
-      {
-        align: "center",
-      }
-    );
+    doc.fontSize(14).text("Thank you for your purchase", { align: "center" });
 
     doc.end();
   } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 };

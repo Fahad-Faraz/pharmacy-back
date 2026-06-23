@@ -1,7 +1,6 @@
 import Product from "../models/Product.js";
-import * as pdfParse from "pdf-parse";
+import pdfParse from "pdf-parse";
 
-// ADD PRODUCT — sirf naam zaroori hai
 export const addProduct = async (req, res) => {
   try {
     const {
@@ -37,7 +36,10 @@ export const addProduct = async (req, res) => {
       quantity: quantity || 0,
       barcode: barcode || null,
       prefix: prefix || null,
-      unit_structure: unit_structure || { box: { strips: 1 }, strip: { tablets: 10 } },
+      unit_structure: unit_structure || {
+        box: { strips: 1 },
+        strip: { tablets: 10 },
+      },
       expiry_date: expiry_date || null,
       discount: discount || 0,
     });
@@ -48,7 +50,6 @@ export const addProduct = async (req, res) => {
   }
 };
 
-// GET PRODUCTS (paginated + search + filter)
 export const getProducts = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -89,7 +90,6 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// UPDATE PRODUCT
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(
@@ -108,7 +108,6 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// DELETE PRODUCT
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
@@ -123,7 +122,6 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// SEARCH (basic)
 export const searchProducts = async (req, res) => {
   try {
     const q = req.query.q;
@@ -143,7 +141,6 @@ export const searchProducts = async (req, res) => {
   }
 };
 
-// SEARCH ADVANCED (with barcode)
 export const searchProductsAdvanced = async (req, res) => {
   try {
     const q = req.query.q;
@@ -167,13 +164,10 @@ export const searchProductsAdvanced = async (req, res) => {
 export const importProductsPDF = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        message: "PDF file required",
-      });
+      return res.status(400).json({ message: "PDF file required" });
     }
 
     const pdfData = await pdfParse(req.file.buffer);
-
     const text = pdfData.text;
 
     console.log(text);
@@ -183,8 +177,6 @@ export const importProductsPDF = async (req, res) => {
       extractedText: text,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };

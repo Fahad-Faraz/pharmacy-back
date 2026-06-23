@@ -13,6 +13,8 @@ const invoiceSchema = new mongoose.Schema(
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         name: String,
         quantity: Number,
+        base_quantity: { type: Number, default: null }, // FIX: actual deducted qty (tablets)
+        unit: String,
         price: Number,
         discount: { type: Number, default: 0 },
         total: Number,

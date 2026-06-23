@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-    // REQUIRED FIELDS (must for manual + import)
     name: {
       type: String,
       required: true,
@@ -11,24 +10,22 @@ const productSchema = new mongoose.Schema(
 
     company_name: {
       type: String,
-      required: true,
+      default: null,
       trim: true,
     },
 
     mrp: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
-      mrp: Number(mrp) || 0
     },
 
     trade_price: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
     },
 
-    // OPTIONAL FIELDS
     product_type: {
       type: String,
       enum: ["company", "local", "franchise", "general"],
@@ -39,7 +36,7 @@ const productSchema = new mongoose.Schema(
 
     prefix: {
       type: String,
-      enum: ["Tab", "Cap", "Inj", "Syp", "Eye Drop", "Nasal spray", "Drop"],
+      enum: ["Tab", "Cap", "Inj", "Syp", "Eye Drop", "Nasal spray", "Drop", null],
       default: null,
     },
 

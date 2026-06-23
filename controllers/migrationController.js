@@ -5,7 +5,8 @@ import { parseCSV } from "../utils/csvParser.js";
 export const migrateCustomers = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "CSV file is required" });
-    const data = await parseCSV(req.file.path);
+
+    const data = await parseCSV(req.file.buffer);
 
     for (let c of data) {
       await Customer.create({
@@ -25,7 +26,8 @@ export const migrateCustomers = async (req, res) => {
 export const migrateProducts = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "CSV file is required" });
-    const data = await parseCSV(req.file.path);
+
+    const data = await parseCSV(req.file.buffer);
 
     for (let p of data) {
       await Product.create({
