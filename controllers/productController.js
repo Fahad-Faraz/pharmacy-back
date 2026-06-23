@@ -1,5 +1,7 @@
 import Product from "../models/Product.js";
-import pdfParse from "pdf-parse";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "";
 
 export const addProduct = async (req, res) => {
   try {
@@ -167,14 +169,24 @@ export const importProductsPDF = async (req, res) => {
       return res.status(400).json({ message: "PDF file required" });
     }
 
-    const pdfData = await pdfParse(req.file.buffer);
-    const text = pdfData.text;
+    const uint8Array = new Uint8Array(req.file.buffer);
+    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+    const pdf = await loadingTask.promise;
 
-    console.log(text);
+    let fullText = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => item.str).join(" ");
+      fullText += pageText + "\n";
+    }
+
+    console.log(fullText);
 
     res.json({
       success: true,
-      extractedText: text,
+      extractedText: fullText,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

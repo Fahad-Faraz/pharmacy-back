@@ -25,6 +25,7 @@
     "mongoose": "^9.5.0",
     "multer": "^2.2.0",
     "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^6.0.227",
     "pdfkit": "^0.19.1",
     "react-redux": "^9.2.0",
     "recharts": "^3.8.1",
