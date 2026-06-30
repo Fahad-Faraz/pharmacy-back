@@ -1,7 +1,5 @@
 import Product from "../models/Product.js";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+import pdf from "pdf-parse";
 
 export const addProduct = async (req, res) => {
   try {
@@ -166,21 +164,15 @@ export const searchProductsAdvanced = async (req, res) => {
 export const importProductsPDF = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "PDF file required" });
+      return res.status(400).json({
+        message: "PDF file required",
+      });
     }
 
-    const uint8Array = new Uint8Array(req.file.buffer);
-    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-    const pdf = await loadingTask.promise;
+    // PDF se text extract karo
+    const data = await pdf(req.file.buffer);
 
-    let fullText = "";
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item) => item.str).join(" ");
-      fullText += pageText + "\n";
-    }
+    const fullText = data.text;
 
     console.log(fullText);
 
@@ -189,6 +181,9 @@ export const importProductsPDF = async (req, res) => {
       extractedText: fullText,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
