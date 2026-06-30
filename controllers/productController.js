@@ -1,5 +1,5 @@
 import Product from "../models/Product.js";
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 
 export const addProduct = async (req, res) => {
   try {
@@ -170,9 +170,7 @@ export const importProductsPDF = async (req, res) => {
     }
 
     // PDF se text extract karo
-    const parser = new PDFParse({ data: req.file.buffer });
-    const data = await parser.getText();
-    await parser.destroy();
+    const data = await pdf(req.file.buffer);
 
     const fullText = data.text;
 
