@@ -20,7 +20,7 @@ router.post(
   protect,
   adminOnly,
   upload.single("file"),
-  importProductsPDF
+  
 );
 router.post(
   "/products",

@@ -1,5 +1,5 @@
 import Product from "../models/Product.js";
-import pdfParse from "pdf-parse";
+
 
 export const addProduct = async (req, res) => {
   try {
@@ -161,29 +161,29 @@ export const searchProductsAdvanced = async (req, res) => {
   }
 };
 
-export const importProductsPDF = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        message: "PDF file required",
-      });
-    }
+//export const importProductsPDF = async (req, res) => {
+ // try {
+    //if (!req.file) {
+      //return res.status(400).json({
+      //  message: "PDF file required",
+     // });
+   // }
 
     // PDF se text extract karo
-    const data = await pdf(req.file.buffer);
+   // const data = await pdf(req.file.buffer);
 
-    const fullText = data.text;
+   // const fullText = data.text;
 
-    console.log(fullText);
+   // console.log(fullText);
 
-    res.json({
-      success: true,
-      extractedText: fullText,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
+    //res.json({
+     // success: true,
+     // extractedText: fullText,
+   // });
+  //} catch (error) {
+    //console.error(error);
+    //res.status(500).json({
+      //message: error.message,
+    //});
+  //}
+//};
