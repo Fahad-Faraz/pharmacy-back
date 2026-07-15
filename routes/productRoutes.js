@@ -5,7 +5,6 @@ import {
   updateProduct,
   deleteProduct,
   searchProductsAdvanced,
-  importProductsPDF,
 } from "../controllers/productController.js";
 import { importProducts } from "../controllers/importController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
