@@ -1,5 +1,5 @@
 import Product from "../models/Product.js";
-import pdf from "pdf-parse";
+import pdfParse from "pdf-parse";
 
 export const addProduct = async (req, res) => {
   try {
